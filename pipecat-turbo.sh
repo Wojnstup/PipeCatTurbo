@@ -20,6 +20,7 @@ search_video(){
 	urls=$( echo "$html" | grep '<a style="width:100%" href=' | awk -F\" '{ print $4 }' )
 }
 
+## Sets titles and urls to found playlists
 search_playlist(){
 	html=$( curl -s "$url${1//" "/"+"}""+content_type%3Aplaylist&page=1"  )
 
@@ -27,6 +28,7 @@ search_playlist(){
 	urls=$( echo "$html" | grep '<a style="width:100%" href=' | awk -F\" '{ print $4 }' )
 }
 
+## Sets titles and urls to playlist content - reused with channels
 get_playlist_content(){
 	echo $1
 	html=$( curl -s "$video_url""$1" )
@@ -35,6 +37,7 @@ get_playlist_content(){
 	urls=$( echo "$html" | grep '<a style="width:100%" href=' | awk -F\" '{ print $4 }' )
 }
 
+## Sets titles and urls found channels
 search_channel(){
 	html=$( curl -s "$url${1//" "/"+"}""+content_type%3Achannel&page=1" )
 
@@ -45,8 +48,13 @@ search_channel(){
 while :
 do
 
-	search_option=$( echo -e "Video\nPlaylist\nChannel\nControlls" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -p "Search option: " )
+	search_option=$( echo -e "Controlls\nVideo\nPlaylist\nChannel\nAudio mode" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -p "Search option: " )
 	
+	if [[ $search_option == "Audio mode" ]]	
+	then
+		search_option=$( echo -e "Controlls\nVideo\nPlaylist\nChannel\nAudio mode" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -p "Audio mode set: " )
+		audio_mode="--no-video"
+	fi
 
 	if [[ $search_option == "Video" ]]
 	then
@@ -65,12 +73,20 @@ do
 
 		## Let user select a title, then get index of that title
 		choice=$( echo "$titles" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -l 10 )
+
+		if (( ${#choice}==0 ))
+		then
+			break
+		fi
+		
+		echo quit | socat - /tmp/mpvsocket	
 		notify-send "Playing '$choice'"
 		echo "$choice" > /tmp/currently_playlist_pipecat
 		choice=$( echo "$titles" | grep -n "$choice" | awk -F: '{ print $1 }' )
 
 		## Get the url with index $choice and play it in mpv
-		mpv --input-ipc-server=$socket_path "$video_url$( echo "$urls" | sed -n $choice\p )"
+		mpv $audio_mode  --input-ipc-server=$socket_path "$video_url$( echo "$urls" | sed -n $choice\p )"
+		
 	elif [[ $search_option == "Playlist" ]]
 	then
 		## Searching for a playlist
@@ -86,13 +102,19 @@ do
 
 		choice=$( echo "$titles" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -l 10 )
 
+		if [[ $choice == "" ]]
+		then
+			break
+		fi
+		
+		echo quit | socat - /tmp/mpvsocket
 		notify-send "Playing '$choice'"
 		echo "$choice" > /tmp/currently_playlist_pipecat		
 
 		choice=$( echo "$titles" | grep -n "$choice" | awk -F: '{ print $1 }' ) 
 		## Get the url with index $choice and play it in mpv
 		
-		mpv --input-ipc-server=$socket_path "$video_url$( echo "$urls" | sed -n $choice\p )"
+		mpv $audio_mode --input-ipc-server=$socket_path "$video_url$( echo "$urls" | sed -n $choice\p )"
 		
 	elif [[ $search_option == "Channel" ]]
 	then
@@ -111,16 +133,22 @@ do
 		get_playlist_content "$choice" 
 		choice=$( echo "$titles" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -l 10 )
 
+		if [[ $choice == "" ]]
+		then
+			break
+		fi
+		
+		echo quit | socat - /tmp/mpvsocket
 		notify-send "Playing '$choice'"
 		echo "$choice" > /tmp/currently_playlist_pipecat
 
 		choice=$( echo "$titles" | grep -n "$choice" | awk -F: '{ print $1 }' )
 		## Get the url with index $choice and play it in mpv
-		mpv --input-ipc-server=$socket_path "$video_url$( echo "$urls" | sed -n $choice\p )"
+		mpv $audio_mode --input-ipc-server=$socket_path "$video_url$( echo "$urls" | sed -n $choice\p )"
 	elif [[ $search_option == "Controlls" ]]
 	then
 		currently_playing=$( cat /tmp/currently_playlist_pipecat )
-		choice=$( echo -e "<<\n||\n>>" | dmenu -sb '#98005d' -l 0 -fn "Terminus:bold:size:15" -h 27 -p "$currently_playing" ) 
+		choice=$( echo -e "<<\n||\n>>\nX" | dmenu -sb '#98005d' -l 0 -fn "Terminus:bold:size:15" -h 27 -p "$currently_playing" ) 
 		case $choice in
 			"<<")
 				echo playlist-prev | socat - /tmp/mpvsocket
@@ -131,8 +159,12 @@ do
 			">>")
 				echo playlist-next | socat - /tmp/mpvsocket
 				;;
+			"X")
+				echo "" > /tmp/currently_playlist_pipecat
+				notify-send "Quitting..."
+				echo quit | socat - /tmp/mpvsocket
+				;;
 		esac
-
 	fi
 	break
 done
