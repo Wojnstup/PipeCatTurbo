@@ -6,10 +6,10 @@ list_file="$HOME/.pipecat_turbo_lists"
 
 ## This is major! These URLS redirect to a privacy-respecting YouTube fronted, so you don't even ping google! If iteroni is down, try yewtu.be, if yewtu.be is down, try iteroni
 ## This uses invidious, that is self hosted. You can even host it on your own and use this script that way. Just replace these urls
-#url="https://iteroni.com/search?q="
-#video_url="https://iteroni.com"
-url="https://yewtu.be/search?q="
-video_url="https://yewtu.be"
+url="https://iteroni.com/search?q="
+video_url="https://iteroni.com"
+#url="https://yewtu.be/search?q="
+#video_url="https://yewtu.be"
 sed_url="https\:\/\/yewtu.be"
 IFS=$'\n'
 
@@ -79,14 +79,25 @@ while :
 do
 	## First menu that pops up
 	search_option=$( echo -e "Controlls\nVideo\nPlaylist\nChannel\nYour Lists\nAudio mode\nShuffle mode\nAdd to list" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -p "Search option: " )
-	
-	## If you selected Audio Mode, relaunch the menu in audio mode
-	if [[ $search_option == "Audio mode" ]]	
-	then
-		search_option=$( echo -e "Controlls\nVideo\nPlaylist\nChannel\nYour Lists\nAudio mode" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -p "Audio mode set: " )
-		audio_mode="--no-video"
-	fi
-	
+	## TODO shuffle mode implementation - put audio mode and shuffle mode in an until loop that will stop once the choice will different than these two. Rename them so they make sense.
+
+
+	while [[ "$search_option" == "Audio mode" ]] || [[ "$search_option" == "Shuffle mode" ]]
+	do
+		## If you selected Audio Mode, relaunch the menu in audio mode
+		if [[ $search_option == "Audio mode" ]]	
+		then
+			search_option=$( echo -e "Controlls\nVideo\nPlaylist\nChannel\nYour Lists\nAudio mode\nShuffle mode" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -p "Audio mode set: " )
+			audio_mode="--no-video"
+		fi
+
+		if [[ $search_option == "Shuffle mode" ]]
+		then
+			search_option=$( echo -e "Controlls\nVideo\nPlaylist\nChannel\nYour Lists\nAudio mode\nShuffle mode" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -p "Shuffle mode set: " )
+			shuffle_mode="--shuffle"
+		fi
+	done
+
 	## If you selected add to list, relaunch the menu in add to list mode
 	if [[ $search_option == "Add to list" ]]
 	then
@@ -94,15 +105,15 @@ do
 		search_option=$( echo -e "Video\nPlaylist\nChannel" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -p "Find what you want to add: " )
 		add_to_list="True"
 	fi
+	
 
 	if [[ $search_option == "Video" ]]
 	then
 		## Searching for a video
 		video=$( echo "" | dmenu -sb '#98005d' -l 0 -fn "Terminus:bold:size:15" -h 27	-p "Search for video:"  )
 	
-		##### TODO Check if user entered anything, if not prompt them again
-
-		if [[ $video == 'quit' ]]
+		## Don't search for empty string
+		if [[ -z $video ]]
 		then
 			break
 		fi
@@ -147,6 +158,12 @@ do
 		## Searching for a playlist
 		playlist=$( echo "" | dmenu -sb '#98005d' -l 0 -fn "Terminus:bold:size:15" -h 27   -p "Search for a playlist:"  )
 
+		## Don't search for empy string
+		if [[ -z $playlist ]]
+		then
+			break
+		fi
+
 		search_playlist "$playlist"
 		
 		## Prompt user to select a playlist, then get the playlists's URL
@@ -188,12 +205,18 @@ do
 
 		## Throw contents of playlist into a file, then play this playlist starting from index in mpv
 		echo "$urls" | sed "s/^/$sed_url/" | awk -F"&list" '{ print $1 }' > /tmp/pipecat_list
-		mpv $audio_mode --input-ipc-server=$socket_path -playlist=/tmp/pipecat_list --playlist-start=$((choice - 1))
+		mpv $audio_mode $shuffle_mode  --input-ipc-server=$socket_path -playlist=/tmp/pipecat_list --playlist-start=$((choice - 1))
 		
 	elif [[ $search_option == "Channel" ]]
 	then
 		## Searching for a channel
 		channel=$( echo "" | dmenu -sb '#98005d' -l 0 -fn "Terminus:bold:size:15" -h 27   -p "Search for a channel:"  )
+
+		## Don't search for empty string
+		if [[ -z $channel ]]
+		then
+			break
+		fi
 
 		search_channel "$channel"	
 		
@@ -244,7 +267,7 @@ do
 		currently_playing=$( cat /tmp/currently_playlist_pipecat )
 
 		## Prompt user to choose an action
-		choice=$( echo -e "<<\n||\n>>\nX" | dmenu -sb '#98005d' -l 0 -fn "Terminus:bold:size:15" -h 27 -p "$currently_playing" ) 
+		choice=$( echo -e "||\nUp\nDown\n<<\n>>\nX" | dmenu -sb '#98005d' -l 0 -fn "Terminus:bold:size:15" -h 27 -p "$currently_playing" ) 
 		case $choice in
 			"<<")
 				echo playlist-prev | socat - /tmp/mpvsocket
@@ -254,6 +277,12 @@ do
 				;;
 			">>")
 				echo playlist-next | socat - /tmp/mpvsocket
+				;;
+			"Up")
+				echo add volume 10 | socat - /tmp/mpvsocket
+				;;
+			"Down")
+				echo add volume -10 | socat - /tmp/mpvsocket
 				;;
 			"X")
 				echo "" > /tmp/currently_playlist_pipecat
@@ -271,7 +300,7 @@ do
 
 		## Extract list names and prompt user to choose a list
 		list=$(cat "$HOME""/.pipecat_turbo_lists" | grep "####- START LIST" | awk -F\< '{ print $2 }' | awk -F\> '{ print $1 }' | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -l 10 )
-		
+	
 		## Get the starting index and the file lenght of playlist file to get playlist starting and ending index in the next for loop. This should be done better than I did it but I'm so tired I just can't do it
 		echo $list
 		start_index=$( cat "$HOME""/.pipecat_turbo_lists" | grep -n "####- START LIST <$list>" | awk -F\: '{ print $1 }' )
@@ -297,11 +326,26 @@ do
 		## Extracting the urls between start_index and index - it should be named end_index or something but i juwst don't care anymore. This took 3 hours to implement. Never code while tired.
 		content=$(echo "$file" | sed -n "$((start_index + 1)),$((index - 1))""p" )
 
-		## Placing these urls into a /tmp file
+		## Get all titles from playlist
+		titles=$(echo "$content" | awk '{$NF=""; print $0}') 
+
+		## Prompt user to choose the starting position
+		play_index=$( echo "$titles" | grep -n "" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -l 10 | awk -F\: '{print $1}' )
+
+		## If user didn't choose anything, break
+		if [[ -z $play_index ]]
+		then
+			break
+		fi
+
+		## Placing playlist urls into a /tmp file
 		echo "$content" | awk '{ print $NF }' > /tmp/pipecat_list
 
-		## Play through a playlist
-		mpv $audio_mode --input-ipc-server=$socket_path --playlist=/tmp/pipecat_list
+		## Play playlist from given position
+		echo quit | socat - /tmp/mpvsocket
+		mpv $audio_mode  $shuffle_mode --input-ipc-server=$socket_path --playlist=/tmp/pipecat_list --playlist-start=$(( play_index - 1 ))
+
+		## ANOTHER TODO file in a bug report on invidious website, can't play lena raine songs (unacceptable)
 			
 	fi
 	break
