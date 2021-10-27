@@ -78,7 +78,7 @@ add_to_list(){
 while :
 do
 	## First menu that pops up
-	search_option=$( echo -e "Controlls\nSearch\nAudio mode\nShuffle mode\nYour Lists\nList tools" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -p "Search option: " )
+	search_option=$( echo -e "Controlls\nSearch\nAudio mode\nShuffle mode\nYour Lists\nList tools" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -p "Option: " )
 
 	## This while loop makes sure you can set both audio mode and shuffle mode at the same time
 	while [[ "$search_option" == "Audio mode" ]] || [[ "$search_option" == "Shuffle mode" ]]
@@ -353,12 +353,22 @@ do
 	elif [[ $search_option == "Create new list" ]]
 	then
 		list_name=$( echo "" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -p "Enter your list name" )
-
+		
+		## If user didn't enter enaything, break
 		if [[ -z $list_name ]]
 		then
 			break
 		fi
 
+		## Check if playlist already exists
+		lists=$(cat "$HOME""/.pipecat_turbo_lists" | grep "####- START LIST <""$list_name""> -####" )
+		if [[ -v lists ]]
+		then
+			echo "Ok" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -p "Playlist already exists"
+			break
+		fi
+
+		## Check if playlist contains illegal characters
 		if [[ $list_name == *"<"* ]] || [[ $list_name == *">"* ]] || [[ $list_name == *"\n"* ]]
 		then
 			echo "Ok" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -p "Playlist name can't use < or > or \\n"
