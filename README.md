@@ -36,16 +36,26 @@
     <img src="/screenshots/your_lists.png">
   </p>
   
-  <h3 color="#c4037a">You can create local lists and append songs to them in dmenu, but also ~/.pipecat_turbo_lists has easy to edit syntax.</h2> 
+  <h3 color="#c4037a">You can create local lists and append songs to them in dmenu, but also ~/.pipecat_turbo_lists has easy to edit syntax.</h3> 
   <p align="center">
     <img src="/screenshots/syntax.png">
   </p>
   
+  <h3 color="#c4037a">How does it work?</h3>
+  <ul>
+    <li>The local playlists are stored in ~/.pipecat_turbo_lists file</li>
+    <li>When launched, mpv creates a /tmp/mpvsocket file, so you can controll it or extract info from it with bash commands</li>
+    <li>While playing playlists, the script creates a /tmp/pipecat_list file, so you can move forward or backwards in your queue</li>
+    <li>All the info and videos are scraped from an <a href="https://github.com/iv-org/invidious">Invidious</a> instance somebody hosted, so you don't ping Google wihle being able to access all the Youtube content</li>
+  </ul>
+  
+  
   <h2 color="#c4037a">Dependencies:</h2>
 
   <ul>
-    <li>mpv</li>
-    <li>libnotify</li>
+    <li>mpv - for playing content</li>
+    <li>libnotify - for notifications</li>
+    <li>socat - for controlling mpv from dmenu</li>
     <li>dmenu (with <a href="https://tools.suckless.org/dmenu/patches/line-height/">height patch </a>applied!)</li>
-    <li>a link to working Invidious instance, if the ones provided go down</li>
+    <li>a link to working Invidious instance, if the ones provided go down. <a href="https://docs.invidious.io/Invidious-Instances.md">List of public instances</a></li>
    </ul>
