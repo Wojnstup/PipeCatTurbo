@@ -348,7 +348,6 @@ do
 		echo quit | socat - /tmp/mpvsocket
 		mpv $audio_mode  $shuffle_mode --input-ipc-server=$socket_path --playlist=/tmp/pipecat_list --playlist-start=$(( play_index - 1 ))
 
-		## ANOTHER TODO file in a bug report on invidious website, can't play lena raine songs (unacceptable)
 			
 	elif [[ $search_option == "Create new list" ]]
 	then
