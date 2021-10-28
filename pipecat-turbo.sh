@@ -4,6 +4,23 @@
 socket_path="/tmp/mpvsocket"
 list_file="$HOME/.pipecat_turbo_lists"
 
+## Change this if you want to change dmenu config / use rofi / use fzf
+## This is the default, uses dmenu
+menu='dmenu -sb "#98005d" -fn "Terminus:bold:size:15"'
+menu_prompt='dmenu -sb "#98005d" -fn "Terminus:bold:size:15" -p'
+menu_lines='dmenu -sb "#98005d" -fn "Terminus:bold:size:15" -l 10'
+
+## Uncomment these three to get better looking dmenu (only with patched dmenu)
+#menu='dmenu -sb "#98005d" -fn "Terminus:bold:size:15" -h 27'
+#menu_prompt='dmenu -sb "#98005d" -fn "Terminus:bold:size:15" -h 27 -p'
+#menu_lines='dmenu -sb "#98005d" -fn "Terminus:bold:size:15" -h 27 10'
+
+## Uncomment this to use with rofi
+#menu='rofi -dmenu'
+#menu_prompt='rofi -dmenu'
+#menu_lines='rofi -dmenu'
+
+
 ## This is major! These URLS redirect to a privacy-respecting YouTube fronted, so you don't even ping google! If iteroni is down, try yewtu.be, if yewtu.be is down, try iteroni
 ## This uses invidious, that is self hosted. You can even host it on your own and use this script that way. Just replace these urls
 url="https://iteroni.com/search?q="
@@ -78,22 +95,22 @@ add_to_list(){
 while :
 do
 	## First menu that pops up
-	search_option=$( echo -e "Controlls\nSearch\nAudio mode\nShuffle mode\nYour Lists\nList tools" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -p "Option: " )
-
+	search_option=$( echo -e "Controlls\nSearch\nAudio mode\nShuffle mode\nYour Lists\nList tools" | eval "${menu_prompt} 'Option:'" )
+	echo $menu_prompt
 	## This while loop makes sure you can set both audio mode and shuffle mode at the same time
 	while [[ "$search_option" == "Audio mode" ]] || [[ "$search_option" == "Shuffle mode" ]]
 	do
 		## If you selected Audio Mode, relaunch the menu in audio mode
 		if [[ $search_option == "Audio mode" ]]	
 		then
-			search_option=$( echo -e "Controlls\nSearch\nAudio mode\nShuffle mode\nYour Lists\nList tools" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -p "Audio mode set: " )
+			search_option=$( echo -e "Controlls\nSearch\nAudio mode\nShuffle mode\nYour Lists\nList tools" | eval "${menu_prompt} 'Audio mode set:'" )
 			audio_mode="--no-video"
 		fi
 		
 		## If you selected Shuffle Mode, relaunch the menu in shuffle mode
 		if [[ $search_option == "Shuffle mode" ]]
 		then
-			search_option=$( echo -e "Controlls\nSearch\nAudio mode\nShuffle mode\nYour Lists\nList tools" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -p "Shuffle mode set: " )
+			search_option=$( echo -e "Controlls\nSearch\nAudio mode\nShuffle mode\nYour Lists\nList tools" | eval "${menu_prompt} 'Shuffle mode set:'" )
 			shuffle_mode="--shuffle"
 		fi
 	done
@@ -101,28 +118,28 @@ do
 	## If user selected List tools, ask them waht they want to do with their lists
 	if [[ $search_option == "List tools" ]]
 	then
-		search_option=$( echo -e "Add to list\nCreate new list" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -p "List tools:" )
+		search_option=$( echo -e "Add to list\nCreate new list" | eval "${menu_prompt} 'List tools:'" )
 	fi
 
 	## If you selected add to list, relaunch the menu in add to list mode
 	if [[ $search_option == "Add to list" ]]
 	then
-		list=$(cat "$HOME""/.pipecat_turbo_lists" | grep "####- START LIST" | awk -F\< '{ print $2 }' | awk -F\> '{ print $1 }' | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -l 10 )
-		search_option=$( echo -e "Video\nPlaylist\nChannel" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -p "Find what you want to add: " )
+		list=$(cat "$HOME""/.pipecat_turbo_lists" | grep "####- START LIST" | awk -F\< '{ print $2 }' | awk -F\> '{ print $1 }' | eval $menu_lines )
+		search_option=$( echo -e "Video\nPlaylist\nChannel" | eval $menu_prompt "Find what you want to add: " )
 		add_to_list="True"
 	fi
 
 	## If user selected Search, prompt them to choose what they are searching for
 	if [[ $search_option == "Search" ]]
 	then
-		search_option=$( echo -e "Video\nPlaylist\nChannel" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -p "Search on youtube: " )
+		search_option=$( echo -e "Video\nPlaylist\nChannel" | eval "${menu_prompt} 'Search on youtube: '" )
 	fi
 	
 	#### THE MAIN IF STATEMENT
 	if [[ $search_option == "Video" ]]
 	then
 		## Searching for a video
-		video=$( echo "" | dmenu -sb '#98005d' -l 0 -fn "Terminus:bold:size:15" -h 27	-p "Search for video:"  )
+		video=$( echo "" | eval "${menu_prompt} 'Search for video:'"  )
 	
 		## Don't search for empty string
 		if [[ -z $video ]]
@@ -134,7 +151,7 @@ do
 		search_video "$video"
 
 		## Let user select a title, then get index of that title
-		choice=$( echo "$titles" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -l 10 )
+		choice=$( echo "$titles" | eval $menu_lines )
 
 		if [[ -z $choice ]]
 		then
@@ -165,7 +182,7 @@ do
 	elif [[ $search_option == "Playlist" ]]
 	then
 		## Searching for a playlist
-		playlist=$( echo "" | dmenu -sb '#98005d' -l 0 -fn "Terminus:bold:size:15" -h 27   -p "Search for a playlist:"  )
+		playlist=$( echo "" | eval "${menu_prompt} 'Search for a playlist:'"  )
 
 		## Don't search for empy string
 		if [[ -z $playlist ]]
@@ -176,7 +193,7 @@ do
 		search_playlist "$playlist"
 		
 		## Prompt user to select a playlist, then get the playlists's URL
-		choice=$( echo "$titles" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -l 10 )
+		choice=$( echo "$titles" | eval $menu_lines )
 		choice=$( echo "$titles" | grep -n "$choice" | awk -F: '{ print $1 }' )
 		choice=$( echo "$urls" | sed -n $choice\p )
 			
@@ -184,7 +201,7 @@ do
 		get_playlist_content "$choice"
 		
 		## Prompt user to select a video/song from playlist
-		choice=$( echo "$titles" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -l 10 -i )
+		choice=$( echo "$titles" | eval $menu_lines )
 
 		## EXTREMELY IMPORTANT! When option set to add to list, add to list and break out of the loop
 		if [[ -v add_to_list ]]
@@ -216,7 +233,7 @@ do
 	elif [[ $search_option == "Channel" ]]
 	then
 		## Searching for a channel
-		channel=$( echo "" | dmenu -sb '#98005d' -l 0 -fn "Terminus:bold:size:15" -h 27   -p "Search for a channel:"  )
+		channel=$( echo "" | eval "${menu_prompt} 'Search for a channel:'"  )
 
 		## Don't search for empty string
 		if [[ -z $channel ]]
@@ -227,7 +244,7 @@ do
 		search_channel "$channel"	
 		
 		## Prompt user to select a channel, then get url of this channel's uploads playlist
-		choice=$( echo "$titles" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -l 10 -i)
+		choice=$( echo "$titles" | eval $menu_lines )
 		choice=$( echo "$titles" | grep -n "$choice" | awk -F: '{ print $1 }' )
 		choice=$( echo "$urls" | sed -n $choice\p )
 		choice=$( echo "/playlist?list=""$choice" )
@@ -238,7 +255,7 @@ do
 		urls=$( echo "$urls" | awk -F"&list" '{ print $1 }' )
 
 		## Prompt user to choose a video from a channel
-		choice=$( echo "$titles" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -l 10 -i )
+		choice=$( echo "$titles" | eval $menu_lines )
 
 		## EXTREMELY IMPORTANT! When option set to add to list, add to list and break out of the loop
 		if [[ -v add_to_list ]]
@@ -266,11 +283,10 @@ do
 		mpv $audio_mode --input-ipc-server=$socket_path "$video_url$( echo "$urls" | sed -n $choice\p )"
 	elif [[ $search_option == "Controlls" ]]
 	then
-		## Bad, bad, bad, bad
 		currently_playing=$( echo '{ "command": ["get_property", "media-title"] }' | socat - /tmp/mpvsocket | awk -F\" '{ print $4 }' )
 
 		## Prompt user to choose an action
-		choice=$( echo -e "||\nUp\nDown\n<<\n>>\nX" | dmenu -sb '#98005d' -l 0 -fn "Terminus:bold:size:15" -h 27 -p "$currently_playing" ) 
+		choice=$( echo -e "||\nUp\nDown\n<<\n>>\nX" | eval "${menu_prompt} \"${currently_playing}\"") 
 		case $choice in
 			"<<")
 				echo playlist-prev | socat - /tmp/mpvsocket
@@ -302,7 +318,7 @@ do
 		file=$( cat $list_file )
 
 		## Extract list names and prompt user to choose a list
-		list=$(cat "$HOME""/.pipecat_turbo_lists" | grep "####- START LIST" | awk -F\< '{ print $2 }' | awk -F\> '{ print $1 }' | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -l 10 -i )
+		list=$(cat "$HOME""/.pipecat_turbo_lists" | grep "####- START LIST" | awk -F\< '{ print $2 }' | awk -F\> '{ print $1 }' | eval $menu_lines )
 	
 		## Get the starting index and the file lenght of playlist file to get playlist starting and ending index in the next for loop. This should be done better than I did it but I'm so tired I just can't do it
 		echo $list
@@ -333,7 +349,7 @@ do
 		titles=$(echo "$content" | awk '{$NF=""; print $0}') 
 
 		## Prompt user to choose the starting position
-		play_index=$( echo "$titles" | grep -n "" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -l 10 -i | awk -F\: '{print $1}' )
+		play_index=$( echo "$titles" | grep -n "" | eval $menu_lines | awk -F\: '{print $1}' )
 
 		## If user didn't choose anything, break
 		if [[ -z $play_index ]]
@@ -350,7 +366,7 @@ do
 
 	elif [[ $search_option == "Create new list" ]]
 	then
-		list_name=$( echo "" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -p "Enter your list name" )
+		list_name=$( echo "" | eval "${menu_prompt} 'Enter your list name:'" )
 		
 		## If user didn't enter enaything, break
 		if [[ -z $list_name ]]
@@ -363,14 +379,14 @@ do
 		echo $lists
 		if [[ $lists == "####- "* ]]
 		then
-			echo "Ok" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -p "Playlist already exists"
+			echo "Ok" | eval "${menu_prompt} 'Playlist already exists'"
 			break
 		fi
 
 		## Check if playlist contains illegal characters
 		if [[ $list_name == *"<"* ]] || [[ $list_name == *">"* ]] || [[ $list_name == *"\n"* ]]
 		then
-			echo "Ok" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -p "Playlist name can't use < or > or \\n"
+			echo "Ok" | eval "${menu_prompt} 'Playlist contains illegal characters'"
 			break
 		fi
 
