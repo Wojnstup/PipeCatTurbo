@@ -348,7 +348,6 @@ do
 		echo quit | socat - /tmp/mpvsocket
 		mpv $audio_mode  $shuffle_mode --input-ipc-server=$socket_path --playlist=/tmp/pipecat_list --playlist-start=$(( play_index - 1 ))
 
-			
 	elif [[ $search_option == "Create new list" ]]
 	then
 		list_name=$( echo "" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -p "Enter your list name" )
@@ -361,7 +360,8 @@ do
 
 		## Check if playlist already exists
 		lists=$(cat "$HOME""/.pipecat_turbo_lists" | grep "####- START LIST <""$list_name""> -####" )
-		if [[ -v lists ]]
+		echo $lists
+		if [[ $lists == "####- "* ]]
 		then
 			echo "Ok" | dmenu -sb '#98005d' -fn "Terminus:bold:size:15" -h 27 -p "Playlist already exists"
 			break
