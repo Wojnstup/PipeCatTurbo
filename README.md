@@ -49,6 +49,12 @@
     <li>All the info and videos are scraped from an <a href="https://github.com/iv-org/invidious">Invidious</a> instance somebody hosted, so you don't ping Google wihle being able to access all the Youtube content</li>
   </ul>
   
+  <h3 color="#c4037a">Config and hacking</h3>
+  <p align="center">
+    The script doesn't have a config file by default. If you want to create a config file, you do it in <span color="#c4037a">~/.config/pipecat_turbo.conf</span><br>
+  The rest is explained in the comments in the script. I'll add more documentation later.
+</p>
+  
   
   <h2 color="#c4037a">Dependencies:</h2>
 
