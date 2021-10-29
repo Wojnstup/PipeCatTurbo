@@ -87,56 +87,60 @@ add_to_list(){
 		fi
 	done
 	
-	echo "$( cat "$HOME""/.pipecat_turbo_lists" | sed "$index"'i'"$2" )" > $list_file
+	if [[ -v 2 ]]
+	then	
+		echo "$( cat "$HOME""/.pipecat_turbo_lists" | sed "$index"'i'"$2" )" > $list_file
+	fi
 }
 
 
 
 ###### MAIN ######
-while :
+
+## First menu that pops up
+search_option=$( echo -e "Controlls\nSearch\nAudio mode\nShuffle mode\nYour Lists\nList tools" | eval "${menu_prompt} 'Option:'" )
+
+## This while loop makes sure you can set both audio mode and shuffle mode at the same time
+while [[ "$search_option" == "Audio mode" ]] || [[ "$search_option" == "Shuffle mode" ]]
 do
-	## First menu that pops up
-	search_option=$( echo -e "Controlls\nSearch\nAudio mode\nShuffle mode\nYour Lists\nList tools" | eval "${menu_prompt} 'Option:'" )
-	echo $menu_prompt
-	## This while loop makes sure you can set both audio mode and shuffle mode at the same time
-	while [[ "$search_option" == "Audio mode" ]] || [[ "$search_option" == "Shuffle mode" ]]
-	do
-		## If you selected Audio Mode, relaunch the menu in audio mode
-		if [[ $search_option == "Audio mode" ]]	
-		then
-			search_option=$( echo -e "Controlls\nSearch\nAudio mode\nShuffle mode\nYour Lists\nList tools" | eval "${menu_prompt} 'Audio mode set:'" )
-			audio_mode="--no-video"
-		fi
-		
-		## If you selected Shuffle Mode, relaunch the menu in shuffle mode
-		if [[ $search_option == "Shuffle mode" ]]
-		then
-			search_option=$( echo -e "Controlls\nSearch\nAudio mode\nShuffle mode\nYour Lists\nList tools" | eval "${menu_prompt} 'Shuffle mode set:'" )
-			shuffle_mode="--shuffle"
-		fi
-	done
-
-	## If user selected List tools, ask them waht they want to do with their lists
-	if [[ $search_option == "List tools" ]]
+	## If you selected Audio Mode, relaunch the menu in audio mode
+	if [[ $search_option == "Audio mode" ]]	
 	then
-		search_option=$( echo -e "Add to list\nCreate new list" | eval "${menu_prompt} 'List tools:'" )
-	fi
-
-	## If you selected add to list, relaunch the menu in add to list mode
-	if [[ $search_option == "Add to list" ]]
-	then
-		list=$(cat "$HOME""/.pipecat_turbo_lists" | grep "####- START LIST" | awk -F\< '{ print $2 }' | awk -F\> '{ print $1 }' | eval $menu_lines )
-		search_option=$( echo -e "Video\nPlaylist\nChannel" | eval "$menu_prompt 'Find what you want to add: '" )
-		add_to_list="True"
-	fi
-
-	## If user selected Search, prompt them to choose what they are searching for
-	if [[ $search_option == "Search" ]]
-	then
-		search_option=$( echo -e "Video\nPlaylist\nChannel" | eval "${menu_prompt} 'Search on youtube: '" )
+		search_option=$( echo -e "Controlls\nSearch\nAudio mode\nShuffle mode\nYour Lists\nList tools" | eval "${menu_prompt} 'Audio mode set:'" )
+		audio_mode="--no-video"
 	fi
 	
-	#### THE MAIN IF STATEMENT
+	## If you selected Shuffle Mode, relaunch the menu in shuffle mode
+	if [[ $search_option == "Shuffle mode" ]]
+	then
+		search_option=$( echo -e "Controlls\nSearch\nAudio mode\nShuffle mode\nYour Lists\nList tools" | eval "${menu_prompt} 'Shuffle mode set:'" )
+		shuffle_mode="--shuffle"
+	fi
+done
+
+## If user selected List tools, ask them waht they want to do with their lists
+if [[ $search_option == "List tools" ]]
+then
+	search_option=$( echo -e "Add to list\nCreate new list" | eval "${menu_prompt} 'List tools:'" )
+fi
+
+## If user selected Search, prompt them to choose what they are searching for
+if [[ $search_option == "Search" ]]
+then
+	search_option=$( echo -e "Video\nPlaylist\nChannel" | eval "${menu_prompt} 'Search on youtube: '" )
+fi
+
+## If you selected add to list, relaunch the menu in add to list mode
+if [[ $search_option == "Add to list" ]]
+then
+	list=$(cat "$HOME""/.pipecat_turbo_lists" | grep "####- START LIST" | awk -F\< '{ print $2 }' | awk -F\> '{ print $1 }' | eval $menu_lines )
+	search_option=$( echo -e "Video\nPlaylist\nChannel" | eval "$menu_prompt 'Find what you want to add: '" )
+	add_to_list="True"
+fi
+
+## This while loop is necesary for adding multiple songs to list
+while :
+do	
 	if [[ $search_option == "Video" ]]
 	then
 		## Searching for a video
@@ -167,7 +171,7 @@ do
 			
 			full_link=$( echo $video_url$( echo "$urls" | sed -n $choice\p ))
 			add_to_list "$list" "$title"' '$full_link
-			break
+			continue
 		fi	
 		
 		## Stop other instances of mpv running
@@ -211,7 +215,7 @@ do
 		        choice=$( echo "$choice" | awk -F: '{ print $1 }' )
 			full_link=$( echo $video_url$( echo "$urls" | sed -n $choice\p | awk -F"&list" '{ print $1 }' ))
 			add_to_list "$list" "$title"' '$full_link
-			break
+			continue
 		fi
 
 		
@@ -265,7 +269,7 @@ do
 			choice=$( echo "$choice" | awk -F: '{ print $1 }' )
 			full_link=$( echo $video_url$( echo "$urls" | sed -n $choice\p ))
 			add_to_list "$list" "$title"' '$full_link
-			break
+			continue
 		fi
 
 		if [[ $choice == "" ]]
@@ -393,6 +397,11 @@ do
 
 		echo -e "####- START LIST <""$list_name""> -####\n####- END LIST -####" >> $list_file 
 	fi
-	break
+
+	## If user didn't specify add to list, then break, else the loop will restart	
+	if [[ -z $add_to_list ]]
+	then
+		break
+	fi
 done
 
