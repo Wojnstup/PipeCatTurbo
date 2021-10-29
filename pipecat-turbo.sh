@@ -126,7 +126,7 @@ do
 	if [[ $search_option == "Add to list" ]]
 	then
 		list=$(cat "$HOME""/.pipecat_turbo_lists" | grep "####- START LIST" | awk -F\< '{ print $2 }' | awk -F\> '{ print $1 }' | eval $menu_lines )
-		search_option=$( echo -e "Video\nPlaylist\nChannel" | eval $menu_prompt "Find what you want to add: " )
+		search_option=$( echo -e "Video\nPlaylist\nChannel" | eval "$menu_prompt 'Find what you want to add: '" )
 		add_to_list="True"
 	fi
 
