@@ -1,34 +1,35 @@
 #! /bin/bash
 
+## Hey! These values are the default values the script is going to use.
+## If you want to change these:
+## 1. Create a ~/.config/pipecat_turbo.conf file
+## 2. Copy everything you want to change, like menu or url variable below
+## 3. Substitute the value of the variable with what you want to change it with.
+
+
 ## To use this you will need socat installed
 socket_path="/tmp/mpvsocket"
 list_file="$HOME/.pipecat_turbo_lists"
 
-## Change this if you want to change dmenu config / use rofi / use fzf
-## This is the default, uses dmenu
-menu='dmenu -sb "#98005d" -fn "Terminus:bold:size:15"'
-menu_prompt='dmenu -sb "#98005d" -fn "Terminus:bold:size:15" -p'
-menu_lines='dmenu -sb "#98005d" -fn "Terminus:bold:size:15" -l 10'
+## This is the default, uses dmenu. If it's commented out by default
+## You can change it to run rofi instead, just go into the config and write
+## menu='rofi --dmenu '
+## menu_prompt='rofi --dmenu'
+## menu_lines='rofi --dmenu'
 
-## Uncomment these three to get better looking dmenu (only with patched dmenu)
-#menu='dmenu -sb "#98005d" -fn "Terminus:bold:size:15" -h 27'
-#menu_prompt='dmenu -sb "#98005d" -fn "Terminus:bold:size:15" -h 27 -p'
-#menu_lines='dmenu -sb "#98005d" -fn "Terminus:bold:size:15" -h 27 10'
-
-## Uncomment this to use with rofi
-#menu='rofi -dmenu'
-#menu_prompt='rofi -dmenu'
-#menu_lines='rofi -dmenu'
-
+menu='dmenu -sb "#98005d" '
+menu_prompt='dmenu -sb "#98005d" -p'
+menu_lines='dmenu -sb "#98005d" -l 10'
 
 ## This is major! These URLS redirect to a privacy-respecting YouTube fronted, so you don't even ping google! If iteroni is down, try yewtu.be, if yewtu.be is down, try iteroni
-## This uses invidious, that is self hosted. You can even host it on your own and use this script that way. Just replace these urls
+## This uses invidious, that is self hosted. You can even host it on your own and use this script that way. Just replace these urls in the config file
 url="https://iteroni.com/search?q="
 video_url="https://iteroni.com"
-#url="https://yewtu.be/search?q="
-#video_url="https://yewtu.be"
 sed_url="https\:\/\/yewtu.be"
 IFS=$'\n'
+
+#### Config file! You can set all this stuff in your config ####
+. $HOME/.config/pipecat_turbo.conf
 
 ###### Functions ######
 
@@ -151,7 +152,7 @@ do
 		search_video "$video"
 
 		## Let user select a title, then get index of that title
-		choice=$( echo "$titles" | eval $menu_lines )
+		choice=$( echo "$titles" | eval "$menu_lines" )
 
 		if [[ -z $choice ]]
 		then
