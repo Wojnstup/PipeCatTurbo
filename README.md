@@ -68,7 +68,7 @@
     <li>mpv - for playing content</li>
     <li>libnotify - for notifications</li>
     <li>socat - for controlling mpv from dmenu</li>
-    <li>dmenu (with <a href="https://tools.suckless.org/dmenu/patches/line-height/">height patch </a>applied!)</li>
+    <li>dmenu</li>
     <li>a link to working Invidious instance, if the ones provided go down <a href="https://docs.invidious.io/Invidious-Instances.md">use a different one</a></li>
    </ul>
    <h6>Disclaimer! I'm a begginer in bash and my coding skills leave much to be desired. This script works, but the code might be a little messy, for now.</h6>
