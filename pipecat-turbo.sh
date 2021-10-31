@@ -1,5 +1,7 @@
 #! /bin/bash
 
+## TODO add mpv rewind functionality, learn how to get timestamp of video and store it
+
 ## Hey! These values are the default values the script is going to use.
 ## If you want to change these:
 ## 1. Create a ~/.config/pipecat_turbo.conf file
@@ -288,10 +290,52 @@ do
 		mpv $audio_mode --input-ipc-server=$socket_path "$video_url$( echo "$urls" | sed -n $choice\p )"
 	elif [[ $search_option == "Controlls" ]]
 	then
+		## Get the title of currently playing media
 		currently_playing=$( echo '{ "command": ["get_property", "media-title"] }' | socat - /tmp/mpvsocket | awk -F\" '{ print $4 }' )
 
+		## Get the playback time of currently playing media
+		seconds=$(echo '{ "command": ["get_property", "playback-time"] }' | socat - /tmp/mpvsocket | awk -F: '{ print $2 }' | awk -F. '{ print $1 }')
+
+		## Get the time remaining, later it will be transformed into total time of media
+		total_time=$(echo '{ "command": ["get_property", "time-remaining"] }' | socat - /tmp/mpvsocket | awk -F: '{ print $2 }' | awk -F. '{ print $1 }')
+
+		## Check if total_time exists and if it is an error
+		if (( ${#total_time} > 0 )) && [[ $total_time != '0,"error"' ]]
+		then
+			echo $total_time
+			echo $seconds
+			total_time=$(( $total_time + $seconds )) 
+			total_sec=$(( $total_time-(60 * $(($total_time / 60)))))
+			
+			if (( ${#total_sec} == 1 ))
+			then
+				sec=$( echo "0""$total_sec" )
+			fi
+
+		else 
+			total_time=0
+			total_sec="00"
+		fi
+		
+		## Check if seconds exists and if it is an error
+		if (( ${#seconds} > 0 )) && [[ $seconds != '0,"error"' ]]
+		then
+			sec=$(( $seconds-(60 * $(($seconds / 60)))))
+			if (( ${#sec} == 1 ))
+			then
+				sec=$( echo "0""$sec" )
+			fi
+		else
+			seconds=0
+			sec="00"
+		fi
+		
+		time=$( echo $(($seconds / 60))"."$sec)
+		total_time=$( echo $(($total_time / 60))"."$total_sec)
+
 		## Prompt user to choose an action
-		choice=$( echo -e "||\nUp\nDown\n<<\n>>\nX" | eval "${menu_prompt} \"${currently_playing}\"") 
+		choice=$( echo -e "||\nUp\nDown\n<\n>\n<<\n>>\nX" | eval "${menu_prompt} \"${currently_playing} CURRENTLY: ${time} / ${total_time} \"") 
+		## TODO add total time
 		case $choice in
 			"<<")
 				echo playlist-prev | socat - /tmp/mpvsocket
@@ -301,6 +345,12 @@ do
 				;;
 			">>")
 				echo playlist-next | socat - /tmp/mpvsocket
+				;;
+			">")
+				echo '{ "command": ["seek", "+15", "relative", "exact"] }' | socat - /tmp/mpvsocket
+				;;
+			"<")
+				echo '{ "command": ["seek", "-15", "relative", "exact"] }' | socat - /tmp/mpvsocket
 				;;
 			"Up")
 				echo add volume 10 | socat - /tmp/mpvsocket
