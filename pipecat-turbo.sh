@@ -27,6 +27,7 @@ menu_lines='dmenu -sb "#98005d" -l 10'
 ## This uses invidious, that is self hosted. You can even host it on your own and use this script that way. Just replace these urls in the config file
 url="https://iteroni.com/search?q="
 video_url="https://iteroni.com"
+normal_url="https://iteroni.com"
 sed_url="https\:\/\/yewtu.be"
 IFS=$'\n'
 
@@ -54,7 +55,7 @@ search_playlist(){
 ## Sets titles and urls to playlist content - reused with channels
 get_playlist_content(){
 	echo $1
-	html=$( curl -s "$video_url""$1" )
+	html=$( curl -s "$normal_url""$1" )
 
 	titles=$( echo "$html" | grep '<p dir="auto">' | awk -F'<p dir="auto">' '{ print $2 }' | awk -F'</p>' '{ print $1 }' | grep -n "" )
 	urls=$( echo "$html" | grep '<a style="width:100%" href=' | awk -F\" '{ print $4 }' )
@@ -335,16 +336,17 @@ do
 
 		## Prompt user to choose an action
 		choice=$( echo -e "||\nUp\nDown\n<\n>\n<<\n>>\nX" | eval "${menu_prompt} \"${currently_playing} CURRENTLY: ${time} / ${total_time} \"") 
-		## TODO add total time
 		case $choice in
 			"<<")
 				echo playlist-prev | socat - /tmp/mpvsocket
+				break
 				;;
 			"||")
 				echo cycle pause | socat - /tmp/mpvsocket
 				;;
 			">>")
 				echo playlist-next | socat - /tmp/mpvsocket
+				break
 				;;
 			">")
 				echo '{ "command": ["seek", "+15", "relative", "exact"] }' | socat - /tmp/mpvsocket
@@ -362,6 +364,10 @@ do
 				echo "" > /tmp/currently_playlist_pipecat
 				notify-send "Quitting..."
 				echo quit | socat - /tmp/mpvsocket
+				break
+				;;
+			*)
+				break
 				;;
 		esac
 	elif [[ $search_option == "Your Lists" ]]
@@ -449,7 +455,7 @@ do
 	fi
 
 	## If user didn't specify add to list, then break, else the loop will restart	
-	if [[ -z $add_to_list ]]
+	if [[ -z $add_to_list ]] && [[ $search_option != "Controlls" ]]
 	then
 		break
 	fi
