@@ -72,4 +72,3 @@
     <li>youtube-dl - for watching videos from the internet</li>
     <li>a link to working Invidious instance, if the ones provided go down <a href="https://docs.invidious.io/Invidious-Instances.md">use a different one</a></li>
    </ul>
-   <h6>Disclaimer! I'm a begginer in bash and my coding skills leave much to be desired. This script works, but the code might be a little messy, for now.</h6>
