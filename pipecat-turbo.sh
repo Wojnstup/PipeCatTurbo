@@ -528,8 +528,10 @@ do
 	then
 		list=$(ls $download_directory | eval $menu_lines)
 		cd $download_directory$list
-		choice=$( ls -1 | grep -n $(ls -1 | eval $menu_lines) | awk -F: '{print $1}')
-		
+		choice=$( ls -1 | grep -n "" | eval $menu_lines | awk -F: '{print $1}')
+		echo " ----------> $choice"
+		ls -1
+
 		file_lenght=$(ls -1 | wc -l)
 		echo "" > /tmp/pipecat_list
 
@@ -542,7 +544,7 @@ do
 		done
 
 		echo quit | socat - /tmp/mpvsocket
-		mpv $audio_mode $shuffle_mode  --input-ipc-server=$socket_path -playlist=/tmp/pipecat_list --playlist-start=$((choice - 1))
+		mpv --playlist-start=$((choice - 1)) $audio_mode $shuffle_mode  --input-ipc-server=$socket_path -playlist=/tmp/pipecat_list 
 	fi
 
 	## If user didn't specify add to list, then break, else the loop will restart	
