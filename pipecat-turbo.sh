@@ -23,6 +23,8 @@ menu='dmenu -sb "#98005d" '
 menu_prompt='dmenu -sb "#98005d" -p'
 menu_lines='dmenu -sb "#98005d" -l 10'
 
+download_directory="$HOME/Music/PipeCat/"
+
 ## This is major! These URLS redirect to a privacy-respecting YouTube fronted, so you don't even ping google! If iteroni is down, try yewtu.be, if yewtu.be is down, try iteroni
 ## This uses invidious, that is self hosted. You can even host it on your own and use this script that way. Just replace these urls in the config file
 url="https://iteroni.com/search?q="
@@ -101,7 +103,7 @@ add_to_list(){
 ###### MAIN ######
 
 ## First menu that pops up
-search_option=$( echo -e "Controlls\nSearch\nAudio mode\nShuffle mode\nYour Lists\nList tools" | eval "${menu_prompt} 'Option:'" )
+search_option=$( echo -e "Controlls\nSearch\nAudio mode\nShuffle mode\nYour Lists\nDownloaded lists\nList tools" | eval "${menu_prompt} 'Option:'" )
 
 ## This while loop makes sure you can set both audio mode and shuffle mode at the same time
 while [[ "$search_option" == "Audio mode" ]] || [[ "$search_option" == "Shuffle mode" ]]
@@ -109,14 +111,14 @@ do
 	## If you selected Audio Mode, relaunch the menu in audio mode
 	if [[ $search_option == "Audio mode" ]]	
 	then
-		search_option=$( echo -e "Controlls\nSearch\nAudio mode\nShuffle mode\nYour Lists\nList tools" | eval "${menu_prompt} 'Audio mode set:'" )
+		search_option=$( echo -e "Controlls\nSearch\nAudio mode\nShuffle mode\nYour Lists\nDownloaded lists\nList tools" | eval "${menu_prompt} 'Audio mode set:'" )
 		audio_mode="--no-video"
 	fi
 	
 	## If you selected Shuffle Mode, relaunch the menu in shuffle mode
 	if [[ $search_option == "Shuffle mode" ]]
 	then
-		search_option=$( echo -e "Controlls\nSearch\nAudio mode\nShuffle mode\nYour Lists\nList tools" | eval "${menu_prompt} 'Shuffle mode set:'" )
+		search_option=$( echo -e "Controlls\nSearch\nAudio mode\nShuffle mode\nYour Lists\nDownloaded lists\nList tools" | eval "${menu_prompt} 'Shuffle mode set:'" )
 		shuffle_mode="--shuffle"
 	fi
 done
@@ -124,7 +126,7 @@ done
 ## If user selected List tools, ask them waht they want to do with their lists
 if [[ $search_option == "List tools" ]]
 then
-	search_option=$( echo -e "Add to list\nCreate new list" | eval "${menu_prompt} 'List tools:'" )
+	search_option=$( echo -e "Add to list\nCreate new list\nDownload list" | eval "${menu_prompt} 'List tools:'" )
 fi
 
 ## If user selected Search, prompt them to choose what they are searching for
@@ -185,7 +187,7 @@ do
 		choice=$( echo "$choice" | awk -F: '{ print $1 }' )
 
 		## Get the url with index $choice and play it in mpv
-		mpv $audio_mode  --input-ipc-server=$socket_path "$video_url$( echo "$urls" | sed -n $choice\p )"
+		mpv $audio_mode  --input-ipc-server=$socket_path "${sed_url//\\/''}$( echo "$urls" | sed -n $choice\p )"
 		
 	elif [[ $search_option == "Playlist" ]]
 	then
@@ -288,7 +290,7 @@ do
 		choice=$( echo "$choice" | awk -F: '{ print $1 }' )
 		
 		## Get the url with index $choice and play it in mpv
-		mpv $audio_mode --input-ipc-server=$socket_path "$video_url$( echo "$urls" | sed -n $choice\p )"
+		mpv $audio_mode --input-ipc-server=$socket_path "${sed_url//\\/''}$( echo "$urls" | sed -n $choice\p )"
 	elif [[ $search_option == "Controlls" ]]
 	then
 		## Get the title of currently playing media
@@ -404,13 +406,22 @@ do
 		done
 		
 		## Extracting the urls between start_index and index - it should be named end_index or something but i juwst don't care anymore. This took 3 hours to implement. Never code while tired.
-		content=$(echo "$file" | sed -n "$((start_index + 1)),$((index - 1))""p" )
+		content="$(echo "$file" | sed -n "$((start_index + 1)),$((index - 1))""p" )"
 
 		## Get all titles from playlist
 		titles=$(echo "$content" | awk '{$NF=""; print $0}') 
 
 		## Prompt user to choose the starting position
 		play_index=$( echo "$titles" | grep -n "" | eval $menu_lines | awk -F\: '{print $1}' )
+		if [[ -v shuffle_mode ]]
+		then
+			start_link=$( echo "$content" | awk '{ print $NF }' | sed -n "$play_index""p" )
+			echo $start_link
+			content="$start_link""$(echo -e "\n")""$(echo "$content" | awk '{ print $NF }' | grep -v "$start_link" | shuf ) )"
+			echo "CONTENT"
+			echo "$content"
+		fi
+
 
 		## If user didn't choose anything, break
 		if [[ -z $play_index ]]
@@ -419,11 +430,21 @@ do
 		fi
 
 		## Placing playlist urls into a /tmp file
-		echo "$content" | awk '{ print $NF }' > /tmp/pipecat_list
+		if [[ -z $shuffle_mode ]]
+		then
+			echo "$content" | awk '{ print $NF }' > /tmp/pipecat_list
+		else
+			echo "$content" > /tmp/pipecat_list
+		fi
 
 		## Play playlist from given position
 		echo quit | socat - /tmp/mpvsocket
-		mpv $audio_mode  $shuffle_mode --input-ipc-server=$socket_path --playlist=/tmp/pipecat_list --playlist-start=$(( play_index - 1 ))
+		if [[ -z $shuffle_mode ]]
+		then
+			mpv $audio_mode  --input-ipc-server=$socket_path --playlist=/tmp/pipecat_list --playlist-start=$(( play_index - 1 ))
+		else
+			mpv $audio_mode  --input-ipc-server=$socket_path --playlist=/tmp/pipecat_list
+		fi
 
 	elif [[ $search_option == "Create new list" ]]
 	then
@@ -452,6 +473,76 @@ do
 		fi
 
 		echo -e "####- START LIST <""$list_name""> -####\n####- END LIST -####" >> $list_file 
+
+	elif [[ $search_option == "Download list" ]]
+	then
+
+		## Make sure list file exists
+		touch $list_file
+
+		## Get contents of list file
+		file=$( cat $list_file )
+
+		## Extract list names and prompt user to choose a list
+		list=$(cat "$HOME""/.pipecat_turbo_lists" | grep "####- START LIST" | awk -F\< '{ print $2 }' | awk -F\> '{ print $1 }' | eval $menu_lines )
+	
+		## Get the starting index and the file lenght of playlist file to get playlist starting and ending index in the next for loop. This should be done better than I did it but I'm so tired I just can't do it
+		echo $list
+		start_index=$( cat "$HOME""/.pipecat_turbo_lists" | grep -n "####- START LIST <$list>" | awk -F\: '{ print $1 }' )
+		file_lenght=$( cat  "$HOME""/.pipecat_turbo_lists" | wc -l )
+		
+		## If for some reason there's no starting index, break
+		if [[ -z $start_index ]]
+		then
+			echo "doesn't exist"
+			break
+		fi
+		
+		## This for loop checks for the nearest END LIST block
+		for index in $( seq $file_lenght)
+		do
+			line=$( echo "$file" | sed -n $index\p )
+			if (( $index > $start_index )) && [ "$line" = "####- END LIST -####" ]
+			then
+				break
+			fi
+		done
+		
+		## Extracting the urls between start_index and index - it should be named end_index or something but i juwst don't care anymore. This took 3 hours to implement. Never code while tired.
+		content="$(echo "$file" | sed -n "$((start_index + 1)),$((index - 1))""p" )"
+
+		echo "$content" | awk '{ print $NF }' > /tmp/download_list
+		echo $list
+		mkdir -p "$download_directory$list"
+
+		cd "$download_directory$list"
+		file_lenght=$( cat  /tmp/download_list | wc -l )
+		for index in $( seq $file_lenght)
+		do
+			line=$( cat /tmp/download_list | sed -n $index\p )
+			echo "link: $line"
+			youtube-dl -x "$line"
+		done
+
+	elif [[ $search_option == "Downloaded lists" ]]
+	then
+		list=$(ls $download_directory | eval $menu_lines)
+		cd $download_directory$list
+		choice=$( ls -1 | grep -n $(ls -1 | eval $menu_lines) | awk -F: '{print $1}')
+		
+		file_lenght=$(ls -1 | wc -l)
+		echo "" > /tmp/pipecat_list
+
+		for index in $( seq $file_lenght)
+		do
+			line=$( ls -1 | sed -n $index\p )
+			echo "$(pwd)/$line" 
+			
+			echo "$(pwd)/$line" >> /tmp/pipecat_list 
+		done
+
+		echo quit | socat - /tmp/mpvsocket
+		mpv $audio_mode $shuffle_mode  --input-ipc-server=$socket_path -playlist=/tmp/pipecat_list --playlist-start=$((choice - 1))
 	fi
 
 	## If user didn't specify add to list, then break, else the loop will restart	
