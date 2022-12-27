@@ -40,34 +40,40 @@ IFS=$'\n'
 
 ## Sets titles and urls to search results
 search_video(){
-	html=$( curl -s "$url${1//" "/"+"}""+content_type%3Avideo&page=1" )
+	html=$( curl -s "$url${1//" "/"+"}""&content_type%3Avideo&page=1" )
 	
 	titles=$( echo "$html" | grep '<p dir="auto">' | awk -F'<p dir="auto">' '{ print $2 }' | awk -F'</p>' '{ print $1 }' | grep -n "") 
+	echo "$titles"
 	urls=$( echo "$html" | grep '<a style="width:100%" href=' | awk -F\" '{ print $4 }' )
 }
 
 ## Sets titles and urls to found playlists
 search_playlist(){
-	html=$( curl -s "$url${1//" "/"+"}""+content_type%3Aplaylist&page=1"  )
+	html=$( curl -s "$url${1//" "/"+"}""&page=1&date=none&type=playlist&duration=none&sort=relevance"  )
 
 	titles=$( echo "$html" | grep '<p dir="auto">' | awk -F'<p dir="auto">' '{ print $2 }' | awk -F'</p>' '{ print $1 }' | grep -v "</b>" | grep -n "" )
 	urls=$( echo "$html" | grep '<a style="width:100%" href=' | awk -F\" '{ print $4 }' )
+	echo "$urls"
 }
 
 ## Sets titles and urls to playlist content - reused with channels
 get_playlist_content(){
 	echo $1
+	echo "$normal_url""$1"
 	html=$( curl -s "$normal_url""$1" )
 
-	titles=$( echo "$html" | grep '<p dir="auto">' | awk -F'<p dir="auto">' '{ print $2 }' | awk -F'</p>' '{ print $1 }' | grep -n "" )
-	urls=$( echo "$html" | grep '<a style="width:100%" href=' | awk -F\" '{ print $4 }' )
+	echo "$html"	
+
+	titles="$( echo "$html" | grep '<p dir="auto">' | awk -F'<p dir="auto">' '{ print $2 }' | awk -F'</p>' '{ print $1 }'  | grep -n "" )"
+	echo "$titles"
+	urls="$( echo "$html" | grep '<a style="width:100%" href=' | awk -F\" '{ print $4 }' )"
 
 	echo "URLS""$urls"
 }
 
 ## Sets titles and urls found channels
 search_channel(){
-	html=$( curl -s "$url${1//" "/"+"}""+content_type%3Achannel&page=1" )
+	html=$( curl -s "$url${1//" "/"+"}""&page=1&date=none&type=channel&duration=none&sort=relevance" )
 
 	titles=$( echo "$html" | grep '<p dir="auto">' | awk -F'<p dir="auto">' '{ print $2 }' | awk -F'</p>' '{ print $1 }' | grep -n "" ) 
 	urls=$( echo "$html" | grep '<a href="/channel' | awk -F\" '{ print $2 }' | awk -F\/ '{ print $3 }' )
@@ -542,6 +548,10 @@ do
 			
 			echo "$(pwd)/$line" >> /tmp/pipecat_list 
 		done
+
+		if [[ -z $choice ]]; then
+			break
+		fi
 
 		echo quit | socat - /tmp/mpvsocket
 		mpv --playlist-start=$((choice - 1)) $audio_mode $shuffle_mode  --input-ipc-server=$socket_path -playlist=/tmp/pipecat_list 
